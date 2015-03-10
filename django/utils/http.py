@@ -4,13 +4,13 @@ import calendar
 import datetime
 import re
 import sys
+import unicodedata
 try:
     from urllib import parse as urllib_parse
 except ImportError:     # Python 2
     import urllib as urllib_parse
     import urlparse
     urllib_parse.urlparse = urlparse.urlparse
-
 
 from email.utils import formatdate
 
@@ -235,9 +235,10 @@ def is_safe_url(url, host=None):
 
     Always returns ``False`` on an empty url.
     """
+    if url is not None:
+        url = url.strip()
     if not url:
         return False
-    url = url.strip()
     # Chrome treats \ completely as /
     url = url.replace('\\', '/')
     # Chrome considers any URL with more than two slashes to be absolute, but
@@ -251,5 +252,10 @@ def is_safe_url(url, host=None):
     # allow this syntax.
     if not url_info.netloc and url_info.scheme:
         return False
-    return (not url_info.netloc or url_info.netloc == host) and \
-        (not url_info.scheme or url_info.scheme in ['http', 'https'])
+    # Forbid URLs that start with control characters. Some browsers (like
+    # Chrome) ignore quite a few control characters at the start of a
+    # URL and might consider the URL as scheme relative.
+    if unicodedata.category(url[0])[0] == 'C':
+        return False
+    return ((not url_info.netloc or url_info.netloc == host) and
+            (not url_info.scheme or url_info.scheme in ['http', 'https']))
