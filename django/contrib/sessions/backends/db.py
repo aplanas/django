@@ -19,7 +19,7 @@ class SessionStore(SessionBase):
             )
             return self.decode(s.session_data)
         except (Session.DoesNotExist, SuspiciousOperation):
-            self.create()
+            self._session_key = None
             return {}
 
     def exists(self, session_key):
@@ -36,7 +36,6 @@ class SessionStore(SessionBase):
                 # Key wasn't unique. Try again.
                 continue
             self.modified = True
-            self._session_cache = {}
             return
 
     def save(self, must_create=False):
@@ -46,6 +45,8 @@ class SessionStore(SessionBase):
         create a *new* entry (as opposed to possibly updating an existing
         entry).
         """
+        if self.session_key is None:
+            return self.create()
         obj = Session(
             session_key=self._get_or_create_session_key(),
             session_data=self.encode(self._get_session(no_load=must_create)),

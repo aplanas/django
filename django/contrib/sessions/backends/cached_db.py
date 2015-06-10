@@ -40,14 +40,14 @@ class SessionStore(DBStore):
                 )
                 data = self.decode(s.session_data)
                 cache.set(self.cache_key, data,
-                    self.get_expiry_age(expiry=s.expire_date))
+                          self.get_expiry_age(expiry=s.expire_date))
             except (Session.DoesNotExist, SuspiciousOperation):
-                self.create()
+                self._session_key = None
                 data = {}
         return data
 
     def exists(self, session_key):
-        if (KEY_PREFIX + session_key) in cache:
+        if session_key and (KEY_PREFIX + session_key) in self._cache:
             return True
         return super(SessionStore, self).exists(session_key)
 
